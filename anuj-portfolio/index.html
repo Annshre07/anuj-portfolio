@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anuj Dewan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VARIABLES */
+:root[data-theme="dark"]{--bg:#080c10;--bg2:#0d1117;--surface:#111820;--border:#1e2d3d;--text:#e8edf5;--text-muted:#6b7f96;--accent:#00d4aa;--accent2:#ff6b35;--glow:rgba(0,212,170,0.15);--loader-bg:#080c10;}
+:root[data-theme="light"]{--bg:#f5f0eb;--bg2:#ede8e1;--surface:#ffffff;--border:#d4c9bb;--text:#1a1208;--text-muted:#7a6a56;--accent:#c84b0f;--accent2:#1a6b8a;--glow:rgba(200,75,15,0.1);--loader-bg:#f5f0eb;}
+
+/* RESET */
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-size:14px;line-height:1.7;overflow-x:hidden;transition:background .4s,color .4s;}
+
+/*LOADER */
+#loader{position:fixed;inset:0;background:var(--loader-bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;transition:opacity .6s ease,visibility .6s ease;}
+#loader.hidden{opacity:0;visibility:hidden;}
+.loader-name{font-family:'Playfair Display',serif; font-size:clamp(56px, 8vw, 88px);font-weight:700;letter-spacing:-2px;color:var(--text);}
+.loader-name span{color:var(--accent);font-style:italic;}
+.loader-bar-wrap{width:200px;height:2px;background:var(--border);border-radius:2px;overflow:hidden;}
+.loader-bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width .05s linear;}
+.loader-pct{font-size:11px;color:var(--text-muted);letter-spacing:.15em;}
+
+/*GRADIENT ORB*/
+#gradient-orb{position:fixed;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,var(--glow) 0%,transparent 70%);pointer-events:none;z-index:0;transform:translate(-50%,-50%);left:50%;top:50%;}
+
+/*CANVAS / CURSOR / SCROLL*/
+#canvas-bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.3;}
+.scroll-progress{position:fixed;top:0;left:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));z-index:300;width:0;}
+.cursor{width:6px;height:6px;border-radius:50%;background:var(--accent);position:fixed;pointer-events:none;z-index:9999;mix-blend-mode:screen;}
+.cursor-ring{width:32px;height:32px;border-radius:50%;border:1px solid var(--accent);position:fixed;pointer-events:none;z-index:9998;opacity:.5;transition:width .2s,height .2s;transform:translate(-50%,-50%);}
+
+/*NAV*/
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;backdrop-filter:blur(20px);background:rgba(8,12,16,.75);border-bottom:1px solid var(--border);transition:background .4s;}
+[data-theme="light"] nav{background:rgba(245,240,235,.85);}
+.nav-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--accent);text-decoration:none;}
+.nav-links{display:flex;gap:28px;list-style:none;align-items:center;}
+.nav-links a{color:var(--text-muted);text-decoration:none;font-size:12px;letter-spacing:.1em;text-transform:uppercase;transition:color .2s;position:relative;}
+.nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s;}
+.nav-links a:hover{color:var(--accent);}
+.nav-links a:hover::after{width:100%;}
+.nav-right{display:flex;align-items:center;gap:12px;}
+.theme-toggle{background:var(--surface);border:1px solid var(--border);color:var(--text);width:40px;height:40px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .3s;}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent);}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;padding:6px;}
+.hamburger span{display:block;width:24px;height:2px;background:var(--text);border-radius:2px;transition:all .3s;}
+.hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.hamburger.open span:nth-child(2){opacity:0;}
+.hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+.mobile-menu{display:none;position:fixed;top:73px;left:0;right:0;z-index:199;background:var(--bg2);border-bottom:1px solid var(--border);padding:24px 32px;flex-direction:column;gap:20px;}
+.mobile-menu.open{display:flex;}
+.mobile-menu a{color:var(--text-muted);text-decoration:none;font-size:13px;letter-spacing:.1em;text-transform:uppercase;transition:color .2s;padding:8px 0;border-bottom:1px solid var(--border);}
+.mobile-menu a:hover{color:var(--accent);}
+
+/*SOCIAL SIDEBAR*/
+.social-sidebar{position:fixed;left:24px;bottom:0;z-index:100;display:flex;flex-direction:column;align-items:center;gap:16px;}
+.social-sidebar::after{content:'';display:block;width:1px;height:80px;background:var(--border);}
+.social-link{color:var(--text-muted);text-decoration:none;transition:color .2s,transform .2s;display:flex;align-items:center;justify-content:center;width:36px;height:36px;}
+.social-link:hover{color:var(--accent);transform:translateY(-3px);}
+.social-link svg{width:18px;height:18px;fill:currentColor;}
+.email-sidebar{position:fixed;right:24px;bottom:0;z-index:100;display:flex;flex-direction:column;align-items:center;gap:16px;}
+.email-sidebar::after{content:'';display:block;width:1px;height:80px;background:var(--border);}
+.email-sidebar a{color:var(--text-muted);text-decoration:none;font-size:11px;letter-spacing:.15em;writing-mode:vertical-rl;transition:color .2s,transform .2s;}
+.email-sidebar a:hover{color:var(--accent);transform:translateY(-3px);}
+
+/*SECTION DIVIDER*/
+.section-divider{max-width:1100px;margin:0 auto;padding:0 48px;display:flex;align-items:center;gap:16px;opacity:.35;}
+.section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);}
+.divider-icon{font-size:12px;color:var(--accent);letter-spacing:.2em;}
+
+/*MAIN*/
+main{position:relative;z-index:1;}
+section{padding:100px 48px;max-width:1100px;margin:0 auto;}
+.section-header{display:flex;align-items:center;gap:16px;margin-bottom:64px;}
+.section-num{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:.1em;}
+.section-title{font-family:'Playfair Display',serif;font-size:clamp(32px,5vw,52px);font-weight:700;letter-spacing:-1px;line-height:1.1;}
+.section-line{flex:1;height:1px;background:var(--border);}
+
+/*HERO */
+#hero{min-height:100vh;display:grid;grid-template-columns:1fr auto;align-items:center;gap:60px;padding:140px 48px 80px;max-width:1100px;margin:0 auto;}
+.hero-tag{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:24px;display:flex;align-items:center;gap:12px;}
+.hero-tag::before{content:'';display:block;width:32px;height:1px;background:var(--accent);}
+h1{font-family:'Playfair Display',serif;font-size:clamp(52px,8vw,96px);font-weight:700;line-height:1.0;letter-spacing:-2px;margin-bottom:16px;}
+.hero-italic{font-style:italic;color:var(--accent);}
+.hero-subtitle{font-family:'Syne',sans-serif;font-size:18px;color:var(--text-muted);margin-bottom:48px;max-width:520px;min-height:28px;}
+.typed-text{color:var(--accent2);border-right:2px solid var(--accent2);animation:blink .7s infinite;}
+@keyframes blink{50%{border-color:transparent;}}
+.hero-cta{display:flex;gap:16px;flex-wrap:wrap;}
+
+/*HERO PHOTO*/
+.hero-photo-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0;transform: translateY(-30px);}
+.hero-photo{width:300px;height:300px;border-radius:50%;background:var(--surface);border:3px solid var(--accent);position:relative;overflow:hidden;cursor:pointer;transform: translateY(-8px);animation:float 4.5s ease-in-out infinite;transition: box-shadow 0.4s ease, border-color 0.4s ease;}
+.hero-photo:hover{transform:scale(1.08) rotate(3deg);box-shadow:0 20px 60px var(--glow), 0 0 0 8px rgba(0,212,170,0.2);}
+@keyframes float{0%,100%{transform:translateY(0px);}50%{transform:translateY(-14px);}}
+[data-theme="light"] .hero-photo:hover{transform: scale(1.00) rotate(-0.5deg) !important;box-shadow:2px 2px 0px #a95a2a,0 0 0 2px rgba(169, 90, 42, 0.06) !important;}
+@keyframes wobble{0%{transform:rotate(0deg) scale(1);}20%{transform:rotate(2.5deg) scale(1.03);}40%{transform:rotate(0deg) scale(1);}60%{transform:rotate(-2.5deg) scale(1.03);}80%{transform:rotate(0deg) scale(1);}100%{transform:rotate(0deg) scale(1);}}
+.hero-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+.hero-photo::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(0,0,0,.1));z-index:1;}
+
+.stats-bar{display:flex;gap:48px;margin-top:64px;padding-top:48px;border-top:1px solid var(--border);flex-wrap:wrap;}
+.stat-num{font-family:'Playfair Display',serif;font-size:42px;font-weight:700;color:var(--accent);line-height:1;}
+.stat-label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-top:4px;}
+
+/*BUTTONS*/
+.btn{padding:14px 32px;border-radius:3px;font-family:'Syne',sans-serif;font-size:13px;font-weight:600;letter-spacing:.05em;cursor:pointer;text-decoration:none;transition:all .25s;display:inline-flex;align-items:center;gap:8px;border:2px solid transparent;}
+.btn-primary{background:var(--accent);color:#000;border-color:var(--accent);}
+.btn-primary:hover{background:transparent;color:var(--accent);box-shadow:0 0 30px var(--glow);}
+.btn-ghost{background:transparent;color:var(--text);border-color:var(--border);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-download{background:var(--surface);color:var(--accent);border-color:var(--border);}
+.btn-download:hover{border-color:var(--accent);box-shadow:0 0 20px var(--glow);}
+
+/*ABOUT  */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start;}
+.about-text p{color:var(--text-muted);margin-bottom:20px;line-height:1.9;font-size:14px;}
+.about-text p strong{color:var(--text);}
+.interests-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:32px;}
+.interest-tag{padding:8px 16px;border:1px solid var(--border);border-radius:2px;font-size:12px;color:var(--text-muted);transition:all .2s;cursor:default;}
+.interest-tag:hover{border-color:var(--accent);color:var(--accent);}
+.skills-title{font-family:'Syne',sans-serif;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:24px;}
+.skill-item{margin-bottom:18px;}
+.skill-header{display:flex;justify-content:space-between;margin-bottom:8px;font-size:12px;}
+.skill-name{color:var(--text);}.skill-pct{color:var(--accent);}
+.skill-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+.skill-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;width:0;transition:width 1.5s cubic-bezier(.4,0,.2,1);}
+
+/* CURRENTLY LEARNING  */
+.learning-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;}
+.learning-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px;position:relative;overflow:hidden;transition:all .3s;}
+.learning-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));transform:scaleX(0);transform-origin:left;transition:transform .4s ease;}
+.learning-card:hover{border-color:var(--accent);transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.25);}
+.learning-card:hover::after{transform:scaleX(1);}
+.learning-pulse{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;}
+.learning-pulse::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--accent);display:block;animation:pulse 1.5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);}}
+.learning-icon{font-size:32px;margin-bottom:12px;display:block;}
+.learning-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;margin-bottom:8px;}
+.learning-desc{font-size:12px;color:var(--text-muted);line-height:1.7;}
+.learning-progress{margin-top:16px;}
+.learning-progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:6px;}
+.learning-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;width:0;transition:width 1.5s cubic-bezier(.4,0,.2,1);}
+.learning-progress-label{font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between;}
+
+/* EDUCATION*/
+.edu-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.edu-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:28px;transition:all .3s;position:relative;overflow:hidden;}
+.edu-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:0;transition:opacity .3s;}
+.edu-card:hover{border-color:var(--accent);transform:translateY(-3px);}
+.edu-card:hover::before{opacity:1;}
+.edu-degree{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;margin-bottom:6px;}
+.edu-school{font-size:13px;color:var(--accent);margin-bottom:6px;}
+.edu-meta{font-size:12px;color:var(--text-muted);}
+.edu-cgpa{display:inline-block;margin-top:10px;padding:4px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:2px;font-size:12px;color:var(--accent2);}
+.cert-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px 28px;display:flex;align-items:center;gap:20px;transition:all .3s;}
+.cert-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+.cert-icon{font-size:28px;flex-shrink:0;}
+.cert-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px;}
+.cert-by{font-size:12px;color:var(--accent);}
+
+/*TIMELINE */
+.timeline{position:relative;padding-left:120px;}
+.timeline::before{content:'';position:absolute;left:100px;top:8px;bottom:0;width:1px;background:linear-gradient(180deg,var(--accent),var(--border));}
+.timeline-item{position:relative;margin-bottom:56px;opacity:0;transform:translateX(-30px);transition:opacity .7s ease,transform .7s ease;}
+.timeline-item.visible{opacity:1;transform:translateX(0);}
+.timeline-date{position:absolute;left:-120px;top:4px;width:90px;text-align:right;font-size:11px;color:var(--accent);letter-spacing:.05em;line-height:1.4;font-family:'DM Mono',monospace;}
+.timeline-dot{position:absolute;left:-27px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);box-shadow:0 0 0 3px var(--glow);transition:box-shadow .3s;}
+.timeline-item:hover .timeline-dot{box-shadow:0 0 0 6px var(--glow);}
+.timeline-connector{position:absolute;left:-15px;top:12px;width:15px;height:1px;background:var(--border);}
+.timeline-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px 28px;transition:all .3s;position:relative;overflow:hidden;}
+.timeline-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(180deg,var(--accent),var(--accent2));opacity:0;transition:opacity .3s;}
+.timeline-item:hover .timeline-card{border-color:var(--accent);transform:translateX(4px);}
+.timeline-item:hover .timeline-card::before{opacity:1;}
+.timeline-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:8px;flex-wrap:wrap;}
+.timeline-role{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;}
+.timeline-badge{padding:4px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:2px;font-size:11px;color:var(--accent);white-space:nowrap;}
+.timeline-company{font-size:13px;color:var(--text-muted);margin-bottom:14px;}
+.timeline-desc{color:var(--text-muted);font-size:13px;line-height:1.8;}
+.timeline-desc li{margin-bottom:6px;list-style:none;padding-left:16px;position:relative;}
+.timeline-desc li::before{content:'→';position:absolute;left:0;color:var(--accent);}
+
+/*PROJECTS*/
+.project-filters{display:flex;gap:8px;margin-bottom:40px;flex-wrap:wrap;}
+.filter-btn{padding:8px 20px;background:transparent;border:1px solid var(--border);color:var(--text-muted);border-radius:2px;cursor:pointer;font-family:'DM Mono',monospace;font-size:12px;transition:all .2s;}
+.filter-btn.active,.filter-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--glow);}
+.projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:24px;}
+.project-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:32px;transition:all .3s;position:relative;overflow:hidden;}
+.project-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:0;transition:opacity .3s;}
+.project-card:hover{border-color:var(--accent);transform:translateY(-4px);box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.project-card:hover::before{opacity:1;}
+.project-card.hidden{display:none;}
+.project-category{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent2);margin-bottom:12px;}
+.project-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:12px;line-height:1.3;}
+.project-desc{color:var(--text-muted);font-size:13px;line-height:1.8;margin-bottom:24px;}
+.project-stack{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;}
+.stack-tag{padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:2px;font-size:11px;color:var(--text-muted);}
+
+/* CONTACT*/
+.contact-wrapper{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start;}
+.contact-info h3{font-family:'Playfair Display',serif;font-size:32px;font-weight:700;margin-bottom:16px;}
+.contact-info p{color:var(--text-muted);margin-bottom:32px;line-height:1.8;}
+.contact-links a{display:flex;align-items:center;gap:12px;color:var(--text-muted);text-decoration:none;padding:14px 0;border-bottom:1px solid var(--border);font-size:13px;transition:color .2s;}
+.contact-links a:hover{color:var(--accent);}
+.contact-icon{width:36px;height:36px;background:var(--surface);border:1px solid var(--border);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.form-group{margin-bottom:20px;}
+.form-label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.form-input,.form-textarea{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:14px 16px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;transition:border-color .2s;outline:none;resize:none;}
+.form-input:focus,.form-textarea:focus{border-color:var(--accent);}
+.form-textarea{height:140px;}
+.form-success{display:none;padding:16px;background:rgba(0,212,170,.1);border:1px solid var(--accent);border-radius:3px;color:var(--accent);font-size:13px;margin-top:16px;}
+.form-error{display:none;padding:16px;background:rgba(255,107,53,.1);border:1px solid var(--accent2);border-radius:3px;color:var(--accent2);font-size:13px;margin-top:16px;}
+
+/* FOOTER / BACK TOP*/
+footer{border-top:1px solid var(--border);padding:32px 48px;max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;color:var(--text-muted);font-size:12px;}
+.back-top{position:fixed;bottom:32px;right:32px;width:44px;height:44px;background:var(--surface);border:1px solid var(--border);border-radius:3px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:100;color:var(--text-muted);font-size:18px;text-decoration:none;opacity:0;transition:all .3s;}
+.back-top.visible{opacity:1;}
+.back-top:hover{border-color:var(--accent);color:var(--accent);}
+
+/*  ANIMATIONS  */
+.fade-up{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease;}
+.fade-up.visible{opacity:1;transform:translateY(0);}
+
+/*RESPONSIVE  */
+@media(max-width:900px){
+  #hero{grid-template-columns:1fr;padding-top:120px;}
+  .hero-photo-wrap{display:none;}
+  .timeline{padding-left:32px;}
+  .timeline::before{left:0;}
+  .timeline-dot{left:-6px;}
+  .timeline-connector{display:none;}
+  .timeline-date{position:static;text-align:left;width:auto;margin-bottom:6px;}
+}
+@media(max-width:768px){
+  nav{padding:16px 24px;}
+  .nav-links{display:none;}
+  .hamburger{display:flex;}
+  section,#hero{padding:80px 24px;}
+  #hero{padding-top:110px;}
+  .about-grid,.contact-wrapper,.edu-grid{grid-template-columns:1fr;gap:40px;}
+  footer{flex-direction:column;gap:12px;padding:32px 24px;}
+  .cursor,.cursor-ring,.social-sidebar,.email-sidebar{display:none;}
+  .section-divider{padding:0 24px;}
+  .stats-bar{gap:28px;}
+}
+
+/* ============================================
+   CHAT HOME PAGE STYLES
+   ============================================ */
+#chat-home {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  transition: opacity .5s ease, visibility .5s ease;
+}
+#chat-home.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* INTRO STATE */
+.chat-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0;
+  transition: opacity .4s ease, transform .4s ease;
+}
+.chat-intro.slide-up {
+  opacity: 0;
+  transform: translateY(-40px);
+  pointer-events: none;
+}
+
+.chat-avatar-emoji {
+  font-size: 80px;
+  line-height: 1;
+  margin-bottom: 28px;
+  animation: avatarFloat 4s ease-in-out infinite;
+  cursor: default;
+  user-select: none;
+}
+@keyframes avatarFloat {
+  0%,100%{transform:translateY(0px);}
+  50%{transform:translateY(-10px);}
+}
+
+.chat-headline {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(28px, 5vw, 56px);
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+.chat-headline em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.chat-subline {
+  font-size: 13px;
+  color: var(--text-muted);
+  letter-spacing: .05em;
+  margin-bottom: 36px;
+}
+
+.chat-pills {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+.chat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all .2s;
+  user-select: none;
+}
+.chat-pill:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--glow);
+  transform: translateY(-2px);
+}
+.chat-pill .pill-icon { font-size: 14px; }
+
+/* CHAT INPUT BAR */
+.chat-input-wrap {
+  width: min(680px, 90vw);
+  position: relative;
+}
+.chat-input-bar {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 18px 60px 18px 28px;
+  font-family: 'DM Mono', monospace;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.chat-input-bar::placeholder { color: var(--text-muted); }
+.chat-input-bar:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--glow);
+}
+.chat-send-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s;
+  color: #000;
+  font-size: 16px;
+}
+.chat-send-btn:hover {
+  background: var(--accent2);
+  transform: translateY(-50%) scale(1.08);
+}
+.chat-send-btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/* ---- CHAT CONVERSATION STATE ---- */
+.chat-conversation {
+  display: none;
+  flex-direction: column;
+  width: min(680px, 90vw);
+  height: calc(100vh - 160px);
+  max-height: 700px;
+  padding-top: 20px;
+}
+.chat-conversation.active { display: flex; }
+
+.chat-avatar-small {
+  font-size: 40px;
+  text-align: center;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+  animation: avatarFloat 4s ease-in-out infinite;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 4px 16px;
+  scroll-behavior: smooth;
+}
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.chat-msg {
+  max-width: 80%;
+  padding: 14px 18px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.7;
+  animation: msgAppear .35s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes msgAppear {
+  from { opacity: 0; transform: translateY(12px) scale(.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.chat-msg.user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #000;
+  border-bottom-right-radius: 4px;
+  font-weight: 500;
+}
+.chat-msg.ai {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+.chat-msg.ai.typing {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  padding: 16px 20px;
+}
+.typing-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: typingBounce 1.2s ease-in-out infinite;
+}
+.typing-dot:nth-child(2){ animation-delay:.2s; }
+.typing-dot:nth-child(3){ animation-delay:.4s; }
+@keyframes typingBounce {
+  0%,80%,100%{transform:translateY(0);opacity:.5;}
+  40%{transform:translateY(-6px);opacity:1;}
+}
+
+/* conversation input wrap — pinned at bottom */
+.chat-conv-input-wrap {
+  flex-shrink: 0;
+  position: relative;
+  margin-top: 8px;
+}
+
+/* SKIP BUTTON */
+.chat-skip-btn {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  padding: 8px 20px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all .2s;
+  z-index: 160;
+}
+.chat-skip-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.chat-skip-btn.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* pills in conversation mode */
+.chat-conv-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.chat-conv-pills .chat-pill {
+  padding: 7px 14px;
+  font-size: 11px;
+}
+
+@media(max-width:600px){
+  .chat-headline { font-size: 28px; }
+  .chat-pills { gap: 7px; }
+  .chat-pill { padding: 8px 14px; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-name">Anuj <span>Dewan</span></div>
+  <div class="loader-bar-wrap"><div class="loader-bar" id="loaderBar"></div></div>
+  <div class="loader-pct" id="loaderPct">0%</div>
+</div>
+
+<!-- GRADIENT ORB -->
+<div id="gradient-orb"></div>
+<canvas id="canvas-bg"></canvas>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<!-- FLOATING SOCIAL SIDEBAR -->
+<div class="social-sidebar">
+  <a class="social-link" href="https://github.com/Annshre07" target="_blank" title="GitHub">
+    <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.38.6.1.82-.26.82-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.54-1.38-1.33-1.75-1.33-1.75-1.08-.74.08-.72.08-.72 1.2.08 1.83 1.23 1.83 1.23 1.06 1.82 2.78 1.3 3.46.99.1-.77.42-1.3.76-1.6-2.66-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.82 1.1.82 2.22v3.29c0 .32.22.69.83.57C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+  </a>
+  <a class="social-link" href="https://www.linkedin.com/in/anuj-dewan-82562525b/" target="_blank" title="LinkedIn">
+    <svg viewBox="0 0 24 24"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.26 2.37 4.26 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zm1.78 13.02H3.56V9h3.56v11.45zM22.23 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.46c.98 0 1.77-.77 1.77-1.72V1.72C24 .77 23.21 0 22.23 0z"/></svg>
+  </a>
+  <a class="social-link" href="mailto:catopine07@gmail.com" title="Email">
+    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+  </a>
+</div>
+<div class="email-sidebar">
+  <a href="mailto:catopine07@gmail.com">catopine07@gmail.com</a>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">AD.</a>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#learning">Learning</a></li>
+    <li><a href="#education">Education</a></li>
+    <li><a href="#experience">Activities</a></li>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="https://drive.google.com/uc?export=download&id=1CQAb_TrzvuFBEfg1aUyoux_pZNBoROn7" class="btn btn-download" style="padding:10px 18px;font-size:12px;" download>⬇ Resume</a>
+    <button class="theme-toggle" id="themeToggle">🌙</button>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#about" class="mob-link">About</a>
+  <a href="#learning" class="mob-link">Currently Learning</a>
+  <a href="#education" class="mob-link">Education</a>
+  <a href="#experience" class="mob-link">Activities</a>
+  <a href="#projects" class="mob-link">Projects</a>
+  <a href="#contact" class="mob-link">Contact</a>
+  <a href="https://drive.google.com/uc?export=download&id=1CQAb_TrzvuFBEfg1aUyoux_pZNBoROn7" download style="color:var(--accent);">⬇ Download Resume</a>
+</div>
+
+<!-- ============================================
+     CHAT HOME PAGE
+     ============================================ -->
+<div id="chat-home">
+
+  <!-- INTRO (headline + pills + input) -->
+  <div class="chat-intro" id="chatIntro">
+    <div class="chat-avatar-emoji" id="chatAvatarEmoji">🧑‍💻</div>
+    <h2 class="chat-headline">What's <em>Anuj</em> doing these days?</h2>
+    <p class="chat-subline">Welcome to my digital archive</p>
+    <div class="chat-pills" id="introPills">
+      <button class="chat-pill" data-prompt="Tell me about Anuj"><span class="pill-icon">🙋</span> Me</button>
+      <button class="chat-pill" data-prompt="What projects has Anuj built?"><span class="pill-icon">💼</span> Projects</button>
+      <button class="chat-pill" data-prompt="What are Anuj's technical skills?"><span class="pill-icon">⚡</span> Skills</button>
+      <button class="chat-pill" data-prompt="What are Anuj's hobbies and interests outside tech?"><span class="pill-icon">🎮</span> Fun</button>
+      <button class="chat-pill" data-prompt="How can I contact Anuj?"><span class="pill-icon">✉️</span> Contact</button>
+    </div>
+    <div class="chat-input-wrap">
+      <input class="chat-input-bar" id="chatInputIntro" type="text" placeholder="Ask me anything..." autocomplete="off" />
+      <button class="chat-send-btn" id="chatSendIntro">→</button>
+    </div>
+  </div>
+
+  <!-- CONVERSATION VIEW -->
+  <div class="chat-conversation" id="chatConversation">
+    <div class="chat-avatar-small" id="chatAvatarSmall">🧑‍💻</div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-conv-pills" id="convPills">
+      <button class="chat-pill" data-prompt="Tell me about Anuj"><span class="pill-icon">🙋</span> Me</button>
+      <button class="chat-pill" data-prompt="What projects has Anuj built?"><span class="pill-icon">💼</span> Projects</button>
+      <button class="chat-pill" data-prompt="What are Anuj's technical skills?"><span class="pill-icon">⚡</span> Skills</button>
+      <button class="chat-pill" data-prompt="What are Anuj's hobbies and interests outside tech?"><span class="pill-icon">🎮</span> Fun</button>
+      <button class="chat-pill" data-prompt="How can I contact Anuj?"><span class="pill-icon">✉️</span> Contact</button>
+    </div>
+    <div class="chat-conv-input-wrap">
+      <input class="chat-input-bar" id="chatInputConv" type="text" placeholder="Ask me anything..." autocomplete="off" />
+      <button class="chat-send-btn" id="chatSendConv">→</button>
+    </div>
+  </div>
+
+  <!-- SKIP BUTTON -->
+  <button class="chat-skip-btn" id="chatSkipBtn">Skip → View Full Portfolio</button>
+</div>
+
+<!-- ============================================ -->
+
+<main>
+
+<!-- HERO -->
+<div id="hero">
+  <div class="hero-content">
+    <div class="hero-tag">Open to Opportunities · Darjeeling, West Bengal</div>
+    <h1>Anuj<br><span class="hero-italic">Dewan</span></h1>
+    <div class="hero-subtitle"><span class="typed-text" id="typed"></span></div>
+    <div class="hero-cta">
+      <a href="#projects" class="btn btn-primary">View Projects →</a>
+      <a href="#contact" class="btn btn-ghost">Get in Touch</a>
+      <a href="https://drive.google.com/uc?export=download&id=1CQAb_TrzvuFBEfg1aUyoux_pZNBoROn7" class="btn btn-download" download>⬇ Resume</a>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-item"><div class="stat-num" id="cnt1">0</div><div class="stat-label">Projects Built</div></div>
+      <div class="stat-item"><div class="stat-num" id="cnt2">0</div><div class="stat-label">Certification</div></div>
+      <div class="stat-item"><div class="stat-num" id="cnt3">0</div><div class="stat-label">Club Roles</div></div>
+      <div class="stat-item"><div class="stat-num" id="cnt4">0</div><div class="stat-label">Tech Stacks</div></div>
+    </div>
+  </div>
+  <!-- Profile Photo -->
+  <div class="hero-photo-wrap">
+    <div class="hero-photo" id="heroPhoto">
+      <img src="https://drive.google.com/thumbnail?id=12VELmiOrG7gRsedU3hsact1gfFWiI88n&sz=w800" alt="Anuj Dewan">
+    </div>
+  </div>
+</div>
+
+<div class="section-divider"><span class="divider-icon">◆ ◆ ◆</span></div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-header fade-up">
+    <span class="section-num">01 —</span>
+    <h2 class="section-title">About Me</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="about-grid">
+    <div class="about-text fade-up">
+      <p>Hey! I'm <strong>Anuj Dewan</strong>, an aspiring Data Scientist currently pursuing my <strong>M.Sc. in Data Science and Computing</strong> at Sri Sathya Sai Institute of Higher Learning, Andhra Pradesh.</p>
+      <p>I have a strong academic foundation in Computer Science with hands-on experience in <strong>supervised machine learning</strong> and full-stack software development. I'm driven by a long-term vision to contribute to the <strong>medical domain</strong> through data-driven insights and intelligent systems.</p>
+      <p>A disciplined learner with a problem-solving mindset, committed to continuous growth, <strong>ethical innovation</strong>, and development of impactful tech solutions. I'm fluent in Nepali, Hindi, and English.</p>
+      <div class="interests-grid">
+        <span class="interest-tag">🤖 Machine Learning</span>
+        <span class="interest-tag">📊 Data Science</span>
+        <span class="interest-tag">🏥 Healthcare AI</span>
+        <span class="interest-tag">🧠 NLP</span>
+        <span class="interest-tag">🔬 Medical Chatbot</span>
+        <span class="interest-tag">🌱 Sustainability</span>
+        <span class="interest-tag">📸 Photography</span>
+        <span class="interest-tag">💽 Data Engineering</span>
+      </div>
+    </div>
+    <div class="fade-up">
+      <div class="skills-title">Technical Skills</div>
+      <div class="skill-item"><div class="skill-header"><span class="skill-name">C / C++</span><span class="skill-pct">70%</span></div><div class="skill-bar"><div class="skill-fill" data-width="70"></div></div></div>
+      <div class="skill-item"><div class="skill-header"><span class="skill-name">HTML / CSS / JavaScript</span><span class="skill-pct">65%</span></div><div class="skill-bar"><div class="skill-fill" data-width="65"></div></div></div>
+      <div class="skill-item"><div class="skill-header"><span class="skill-name">Python</span><span class="skill-pct">60%</span></div><div class="skill-bar"><div class="skill-fill" data-width="60"></div></div></div>
+      <div class="skill-item"><div class="skill-header"><span class="skill-name">React / Node / Express</span><span class="skill-pct">50%</span></div><div class="skill-bar"><div class="skill-fill" data-width="50"></div></div></div>
+      <div class="skill-item"><div class="skill-header"><span class="skill-name">SQL / MongoDB</span><span class="skill-pct">65%</span></div><div class="skill-bar"><div class="skill-fill" data-width="65"></div></div></div>
+      <div class="skill-item"><div class="skill-header"><span class="skill-name">Machine Learning / NLP</span><span class="skill-pct">60%</span></div><div class="skill-bar"><div class="skill-fill" data-width="60"></div></div></div>
+      <div class="skill-item"><div class="skill-header"><span class="skill-name">EDA</span><span class="skill-pct">50%</span></div><div class="skill-bar"><div class="skill-fill" data-width="50"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"><span class="divider-icon">◆ ◆ ◆</span></div>
+
+<!-- CURRENTLY LEARNING -->
+<section id="learning">
+  <div class="section-header fade-up">
+    <span class="section-num">02 —</span>
+    <h2 class="section-title">Currently Learning</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="learning-grid">
+    <div class="learning-card fade-up">
+      <div class="learning-pulse">In Progress</div>
+      <span class="learning-icon">🧠</span>
+      <div class="learning-title">NLP for Medical Domain</div>
+      <div class="learning-desc">Exploring NLP techniques applied to clinical text, biomedical literature, and patient data for intelligent health systems.</div>
+      <div class="learning-progress"><div class="learning-progress-label"><span>Progress</span><span>35%</span></div><div class="learning-progress-bar"><div class="learning-progress-fill" data-width="35"></div></div></div>
+    </div>
+    <div class="learning-card fade-up">
+      <div class="learning-pulse">In Progress</div>
+      <span class="learning-icon">🏥</span>
+      <div class="learning-title">Medical Chatbot Development</div>
+      <div class="learning-desc">Building conversational agents for healthcare using LLMs, fine-tuning on medical QA datasets, and integrating symptom triage workflows.</div>
+      <div class="learning-progress"><div class="learning-progress-label"><span>Progress</span><span>35%</span></div><div class="learning-progress-bar"><div class="learning-progress-fill" data-width="35"></div></div></div>
+    </div>
+    <div class="learning-card fade-up">
+      <div class="learning-pulse">In Progress</div>
+      <span class="learning-icon">📚</span>
+      <div class="learning-title">RAG — Retrieval Augmented Generation</div>
+      <div class="learning-desc">Studying vector databases (FAISS, Pinecone), embedding models, and retrieval pipelines to ground LLM responses in domain-specific knowledge.</div>
+      <div class="learning-progress"><div class="learning-progress-label"><span>Progress</span><span>25%</span></div><div class="learning-progress-bar"><div class="learning-progress-fill" data-width="25"></div></div></div>
+    </div>
+    <div class="learning-card fade-up">
+      <div class="learning-pulse">In Progress</div>
+      <span class="learning-icon">🤖</span>
+      <div class="learning-title">Agentic AI Systems</div>
+      <div class="learning-desc">Building autonomous AI agents with tool use, multi-step reasoning, memory, and planning using LangChain and LlamaIndex.</div>
+      <div class="learning-progress"><div class="learning-progress-label"><span>Progress</span><span>30%</span></div><div class="learning-progress-bar"><div class="learning-progress-fill" data-width="30"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"><span class="divider-icon">◆ ◆ ◆</span></div>
+
+<!-- EDUCATION -->
+<section id="education">
+  <div class="section-header fade-up">
+    <span class="section-num">03 —</span>
+    <h2 class="section-title">Education</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="edu-grid fade-up">
+    <div class="edu-card">
+      <div class="edu-degree">M.Sc. in Data Science & Computing</div>
+      <div class="edu-school">Sri Sathya Sai Institute of Higher Learning</div>
+      <div class="edu-meta">Expected 2027 · Ongoing</div>
+      <span class="edu-cgpa">CGPA: 7.6</span>
+    </div>
+    <div class="edu-card">
+      <div class="edu-degree">B.Sc. (Hons.) in Computer Science</div>
+      <div class="edu-school">Sri Sathya Sai Institute of Higher Learning</div>
+      <div class="edu-meta">Graduated 2025</div>
+      <span class="edu-cgpa">CGPA: 7.08</span>
+    </div>
+    <div class="edu-card">
+      <div class="edu-degree">Intermediate — Class XII</div>
+      <div class="edu-school">St. Robert's Higher Secondary School, Darjeeling</div>
+      <div class="edu-meta">2021</div>
+      <span class="edu-cgpa">75%</span>
+    </div>
+    <div class="edu-card">
+      <div class="edu-degree">Secondary Education — Class X</div>
+      <div class="edu-school">St. Robert's Higher Secondary School, Darjeeling</div>
+      <div class="edu-meta">2019</div>
+      <span class="edu-cgpa">70%</span>
+    </div>
+  </div>
+  <div style="margin-top:40px;" class="fade-up">
+    <div class="skills-title" style="margin-bottom:16px;">Certifications</div>
+    <div class="cert-card">
+      <div class="cert-icon">🏆</div>
+      <div>
+        <div class="cert-name">Supervised Machine Learning: Regression & Classification</div>
+        <div class="cert-by">Coursera · DeepLearning.AI / Stanford</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"><span class="divider-icon">◆ ◆ ◆</span></div>
+
+<!-- ACTIVITIES -->
+<section id="experience">
+  <div class="section-header fade-up">
+    <span class="section-num">04 —</span>
+    <h2 class="section-title">Activities</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-date">2023<br>— 2025</div>
+      <div class="timeline-dot"></div>
+      <div class="timeline-connector"></div>
+      <div class="timeline-card">
+        <div class="timeline-header"><div class="timeline-role">Core Member</div><span class="timeline-badge">Co-Curricular</span></div>
+        <div class="timeline-company">Eco-Einsteins Club · SSSIHL-NDG</div>
+        <ul class="timeline-desc">
+          <li>Led campus eco-friendly initiatives and sustainability projects.</li>
+          <li>Organized awareness drives and workshops on environmental responsibility.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-date">2023<br>— 2025</div>
+      <div class="timeline-dot"></div>
+      <div class="timeline-connector"></div>
+      <div class="timeline-card">
+        <div class="timeline-header"><div class="timeline-role">Member</div><span class="timeline-badge">Co-Curricular</span></div>
+        <div class="timeline-company">Multimedia Department · SSSIHL-NDG</div>
+        <ul class="timeline-desc">
+          <li>Produced videos and documented significant institute events using Da Vinci Resolve.</li>
+          <li>Managed visual storytelling and event coverage for the campus community.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-date">2024<br>— 2025</div>
+      <div class="timeline-dot"></div>
+      <div class="timeline-connector"></div>
+      <div class="timeline-card">
+        <div class="timeline-header"><div class="timeline-role">Technical Assistant</div><span class="timeline-badge">Co-Curricular</span></div>
+        <div class="timeline-company">Institute Podcast · SSSIHL</div>
+        <ul class="timeline-desc">
+          <li>Handled content creation, videography, and technical management for the institute podcast.</li>
+          <li>Contributed to production workflows and episode release pipelines.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-date">2024</div>
+      <div class="timeline-dot"></div>
+      <div class="timeline-connector"></div>
+      <div class="timeline-card">
+        <div class="timeline-header"><div class="timeline-role">Inspire to Innovate Workshop</div><span class="timeline-badge">Workshop</span></div>
+        <div class="timeline-company">Institution's Innovation Council, SSSIHL</div>
+        <ul class="timeline-desc"><li>Focused on structured problem-solving and innovation techniques.</li></ul>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-date">2024</div>
+      <div class="timeline-dot"></div>
+      <div class="timeline-connector"></div>
+      <div class="timeline-card">
+        <div class="timeline-header"><div class="timeline-role">Innovate360</div><span class="timeline-badge">Workshop</span></div>
+        <div class="timeline-company">SSSIHL</div>
+        <ul class="timeline-desc"><li>Covered industry trends, alumni insights, and emerging technologies.</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"><span class="divider-icon">◆ ◆ ◆</span></div>
+
+<!-- PROJECTS -->
+<section id="projects">
+  <div class="section-header fade-up">
+    <span class="section-num">05 —</span>
+    <h2 class="section-title">Projects</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="project-filters fade-up">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="web">Web</button>
+    <button class="filter-btn" data-filter="ml">ML / Data</button>
+    <button class="filter-btn" data-filter="systems">Systems</button>
+  </div>
+  <div class="projects-grid">
+    <div class="project-card fade-up" data-category="web">
+      <div class="project-category">Personal Project · Full Stack</div>
+      <div class="project-title">Personal Portfolio Website</div>
+      <div class="project-desc">Designed and developed a responsive portfolio using the MERN stack, showcasing projects, skills, and experiences with interactive UI components and modern design principles.</div>
+      <div class="project-stack"><span class="stack-tag">React</span><span class="stack-tag">Node.js</span><span class="stack-tag">Express</span><span class="stack-tag">MongoDB</span><span class="stack-tag">MUI</span></div>
+    </div>
+    <div class="project-card fade-up" data-category="web systems">
+      <div class="project-category">Institute Project · Platform</div>
+      <div class="project-title">Labyrinth — Competitive Coding Platform</div>
+      <div class="project-desc">A competitive coding platform inspired by LeetCode, designed for institute-level challenges with integrated collaboration features, problem sets, and leaderboards.</div>
+      <div class="project-stack"><span class="stack-tag">JavaScript</span><span class="stack-tag">ReactJS</span><span class="stack-tag">ExpressJS</span><span class="stack-tag">MongoDB</span></div>
+    </div>
+    <div class="project-card fade-up" data-category="systems">
+      <div class="project-category">Mini Project · C++ · Systems</div>
+      <div class="project-title">Holistic Health — Dispensary Management System</div>
+      <div class="project-desc">Terminal-based dispensary management system for managing medicine stocks, tracking student assets, and securely storing transaction data for the campus health center.</div>
+      <div class="project-stack"><span class="stack-tag">C++</span><span class="stack-tag">DSA</span><span class="stack-tag">File I/O</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"><span class="divider-icon">◆ ◆ ◆</span></div>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="section-header fade-up">
+    <span class="section-num">06 —</span>
+    <h2 class="section-title">Get in Touch</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="contact-wrapper">
+    <div class="contact-info fade-up">
+      <h3>Let's build<br><em>something great.</em></h3>
+      <p>Whether you have a data science project, a collaboration idea, or just want to connect — drop me a message and I'll get back to you!</p>
+      <div class="contact-links">
+        <a href="mailto:catopine07@gmail.com"><span class="contact-icon">✉</span>catopine07@gmail.com</a>
+        <a href="https://www.linkedin.com/in/anuj-dewan-82562525b/" target="_blank"><span class="contact-icon">in</span>LinkedIn Profile</a>
+        <a href="https://github.com/Annshre07" target="_blank"><span class="contact-icon">⌨</span>GitHub — Annshre07</a>
+      </div>
+    </div>
+    <div class="fade-up">
+      <div class="form-group"><label class="form-label">Your Name</label><input class="form-input" type="text" id="formName" placeholder="Ann Shre"></div>
+      <div class="form-group"><label class="form-label">Email Address</label><input class="form-input" type="email" id="formEmail" placeholder="catopine07@gmail.com"></div>
+      <div class="form-group"><label class="form-label">Message</label><textarea class="form-textarea" id="formMessage" placeholder="Tell me about your project or idea..."></textarea></div>
+      <button class="btn btn-primary" id="formSubmit" style="width:100%;justify-content:center;">Send Message →</button>
+      <div class="form-success" id="formSuccess">✓ Message sent! I'll get back to you soon.</div>
+      <div class="form-error" id="formError">✗ Something went wrong. Please email me directly.</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <span>© 2026 Anuj Dewan — Designed with 🦔 & 🐈</span>
+  <span>Darjeeling, West Bengal, India</span>
+</footer>
+
+<a href="#" class="back-top" id="backTop">↑</a>
+
+<script>
+/* ============================================
+   CHAT HOME PAGE LOGIC
+   ============================================ */
+
+const ANUJ_SYSTEM_PROMPT = `You are Anuj Dewan's digital twin on his personal portfolio website. You ONLY answer questions about Anuj — his background, skills, projects, education, interests, and how to contact him. You speak in first person as Anuj, in a friendly, warm, slightly casual tone. Keep responses concise (2-4 sentences max unless asked for detail).
+
+STRICT RULE: If the question is NOT about Anuj (e.g. general knowledge, current events, celebrities, politics, sports trivia, science, history, or anything unrelated to Anuj personally), you MUST respond with a short, playful redirect like: "Ha, I wish I knew everything! But I'm just Anuj's digital twin — I can only tell you about him. Ask me about his projects, skills, or what he's been up to lately!" Never answer general knowledge questions. Never act as a general-purpose assistant.
+
+About Anuj:
+- Pursuing M.Sc. in Data Science & Computing at SSSIHL, Andhra Pradesh (expected 2027, CGPA: 7.6)
+- B.Sc. (Hons.) in Computer Science from SSSIHL (2025, CGPA: 7.08)
+- Schooled at St. Robert's Higher Secondary School, Darjeeling, West Bengal
+- Interests: Machine Learning, NLP, Healthcare AI, Medical Chatbots, RAG, Agentic AI
+- Currently learning: NLP for Medical Domain, Medical Chatbot Dev, RAG pipelines, Agentic AI Systems
+- Tech skills: Python (60%), C/C++ (70%), HTML/CSS/JS (65%), React/Node/Express (50%), SQL/MongoDB (65%), ML/NLP (60%)
+- Projects: Personal Portfolio (MERN), Labyrinth competitive coding platform (React+Express+MongoDB), Holistic Health dispensary management system (C++)
+- Activities: Core member Eco-Einsteins Club, Multimedia Dept at SSSIHL, Technical Assistant at Institute Podcast
+- Hobbies: Photography, sustainability, loves cricket and FC Barcelona
+- Speaks Nepali, Hindi, and English
+- Open to opportunities
+- Email: catopine07@gmail.com
+- LinkedIn: https://www.linkedin.com/in/anuj-dewan-82562525b/
+- GitHub: https://github.com/Annshre07
+
+Remember: You are NOT a general assistant. You are Anuj's personal digital twin. Politely deflect anything off-topic back to questions about Anuj.`;
+
+const chatHistory = [];
+
+async function sendToAnuj(userMessage) {
+  chatHistory.push({ role: 'user', content: userMessage });
+
+  // Show typing indicator
+  const typingEl = document.createElement('div');
+  typingEl.className = 'chat-msg ai typing';
+  typingEl.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  const messagesEl = document.getElementById('chatMessages');
+  messagesEl.appendChild(typingEl);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  try {
+    // Calls our Netlify serverless function at /api/chat
+    // The function adds the secret API key server-side — it's never exposed here
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system: ANUJ_SYSTEM_PROMPT,
+        messages: chatHistory
+      })
+    });
+
+    const data = await response.json();
+    const reply = data.reply || "Hey! Something went sideways on my end. Try again?";
+
+    chatHistory.push({ role: 'assistant', content: reply });
+
+    // Remove typing indicator, add real message
+    typingEl.remove();
+    appendMessage('ai', reply);
+  } catch (err) {
+    typingEl.remove();
+    appendMessage('ai', "Hmm, looks like there's a connection issue. Try again in a bit!");
+  }
+}
+
+function appendMessage(role, text) {
+  const el = document.createElement('div');
+  el.className = `chat-msg ${role}`;
+  el.textContent = text;
+  const messagesEl = document.getElementById('chatMessages');
+  messagesEl.appendChild(el);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function switchToConversation(firstMessage) {
+  // Animate intro out
+  const intro = document.getElementById('chatIntro');
+  intro.classList.add('slide-up');
+  setTimeout(() => { intro.style.display = 'none'; }, 400);
+
+  // Show conversation
+  const conv = document.getElementById('chatConversation');
+  conv.classList.add('active');
+
+  // Add user message and trigger AI response
+  appendMessage('user', firstMessage);
+  sendToAnuj(firstMessage);
+}
+
+function handleChatSend(inputEl) {
+  const val = inputEl.value.trim();
+  if (!val) return;
+  inputEl.value = '';
+
+  const intro = document.getElementById('chatIntro');
+  if (!intro.classList.contains('slide-up') && intro.style.display !== 'none') {
+    switchToConversation(val);
+  } else {
+    appendMessage('user', val);
+    sendToAnuj(val);
+  }
+}
+
+// Intro send
+document.getElementById('chatSendIntro').addEventListener('click', () => {
+  handleChatSend(document.getElementById('chatInputIntro'));
+});
+document.getElementById('chatInputIntro').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') handleChatSend(document.getElementById('chatInputIntro'));
+});
+
+// Conv send
+document.getElementById('chatSendConv').addEventListener('click', () => {
+  handleChatSend(document.getElementById('chatInputConv'));
+});
+document.getElementById('chatInputConv').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') handleChatSend(document.getElementById('chatInputConv'));
+});
+
+// Pills (both intro and conv)
+document.querySelectorAll('.chat-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    const prompt = pill.dataset.prompt;
+    const intro = document.getElementById('chatIntro');
+    if (!intro.classList.contains('slide-up') && intro.style.display !== 'none') {
+      switchToConversation(prompt);
+    } else {
+      appendMessage('user', prompt);
+      sendToAnuj(prompt);
+    }
+  });
+});
+
+// Skip button — dismiss chat home, show portfolio
+document.getElementById('chatSkipBtn').addEventListener('click', dismissChatHome);
+
+function dismissChatHome() {
+  const chatHome = document.getElementById('chat-home');
+  chatHome.classList.add('hidden');
+  document.body.style.overflow = '';
+  // Trigger skill bar / counter animations since they're now visible
+  startCounters();
+  document.querySelectorAll('.skill-fill,.learning-progress-fill').forEach(b => {
+    setTimeout(() => b.style.width = b.dataset.width + '%', 300);
+  });
+}
+
+// Lock scroll while chat home is showing
+document.body.style.overflow = 'hidden';
+
+/* ============================================
+   EXISTING PAGE SCRIPTS
+   ============================================ */
+
+/*  PAGE LOADER  */
+const loaderBar=document.getElementById('loaderBar'),loaderPct=document.getElementById('loaderPct'),loader=document.getElementById('loader');
+let progress=0;
+const loaderInterval=setInterval(()=>{
+  progress+=Math.random()*18;
+  if(progress>=100){progress=100;clearInterval(loaderInterval);}
+  loaderBar.style.width=progress+'%';
+  loaderPct.textContent=Math.floor(progress)+'%';
+  if(progress===100){setTimeout(()=>{loader.classList.add('hidden');},400);}
+},120);
+
+/*THEME TOGGLE  */
+const html=document.documentElement;
+document.getElementById('themeToggle').addEventListener('click',()=>{
+  const isDark=html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme',isDark?'light':'dark');
+  document.getElementById('themeToggle').textContent=isDark?'☀️':'🌙';
+});
+
+/* HAMBURGER  */
+const hamburger=document.getElementById('hamburger'),mobileMenu=document.getElementById('mobileMenu');
+hamburger.addEventListener('click',()=>{hamburger.classList.toggle('open');mobileMenu.classList.toggle('open');});
+document.querySelectorAll('.mob-link').forEach(a=>a.addEventListener('click',()=>{hamburger.classList.remove('open');mobileMenu.classList.remove('open');}));
+
+/*  TYPING ANIMATION */
+const phrases=['Aspiring Data Scientist','ML & NLP Enthusiast','Healthcare AI Advocate','Full Stack Developer','Problem Solver'];
+let pi=0,ci=0,deleting=false;
+const typedEl=document.getElementById('typed');
+function type(){
+  const word=phrases[pi];
+  if(!deleting){typedEl.textContent=word.slice(0,++ci);if(ci===word.length){deleting=true;setTimeout(type,1800);return;}}
+  else{typedEl.textContent=word.slice(0,--ci);if(ci===0){deleting=false;pi=(pi+1)%phrases.length;}}
+  setTimeout(type,deleting?50:90);
+}
+type();
+
+/*  CANVAS PARTICLES  */
+const canvas=document.getElementById('canvas-bg'),ctx=canvas.getContext('2d');
+let W,H;
+const resize=()=>{W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;};
+resize();window.addEventListener('resize',resize);
+const pts=Array.from({length:100},()=>({x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,r:Math.random()*1.5+.5}));
+function drawCanvas(){
+  ctx.clearRect(0,0,W,H);
+  const c=html.getAttribute('data-theme')==='dark'?'0,212,170':'200,75,15';
+  pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(${c},.5)`;ctx.fill();});
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<110){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle=`rgba(${c},${.08*(1-d/110)})`;ctx.lineWidth=.5;ctx.stroke();}}
+  requestAnimationFrame(drawCanvas);
+}
+drawCanvas();
+
+/*  MOUSE GRADIENT ORB  */
+const orb=document.getElementById('gradient-orb');
+let targetX=window.innerWidth/2,targetY=window.innerHeight/2;
+document.addEventListener('mousemove',e=>{targetX=e.clientX;targetY=e.clientY;});
+(function animOrb(){orb.style.left=targetX+'px';orb.style.top=targetY+'px';requestAnimationFrame(animOrb);})();
+
+/*  CURSOR  */
+const cursor=document.getElementById('cursor'),ring=document.getElementById('cursorRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursor.style.transform=`translate(${mx-3}px,${my-3}px)`;});
+(function animRing(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(animRing);})();
+document.querySelectorAll('a,button').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{ring.style.width='50px';ring.style.height='50px';ring.style.opacity='0.8';});
+  el.addEventListener('mouseleave',()=>{ring.style.width='32px';ring.style.height='32px';ring.style.opacity='0.5';});
+});
+
+/*  SCROLL  */
+window.addEventListener('scroll',()=>{
+  document.getElementById('scrollProgress').style.width=(window.scrollY/(document.body.scrollHeight-window.innerHeight)*100)+'%';
+  document.getElementById('backTop').classList.toggle('visible',window.scrollY>300);
+});
+
+/*  STAT COUNTERS */
+const counterTargets={cnt1:3,cnt2:1,cnt3:3,cnt4:1};
+let countersStarted=false;
+function startCounters(){
+  if(countersStarted)return;countersStarted=true;
+  Object.entries(counterTargets).forEach(([id,target])=>{
+    const el=document.getElementById(id);if(!el)return;
+    let c=0;const iv=setInterval(()=>{el.textContent=++c;if(c>=target)clearInterval(iv);},120);
+  });
+}
+
+/*  INTERSECTION OBSERVER  */
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('visible');
+      e.target.querySelectorAll('.skill-fill,.learning-progress-fill').forEach(b=>setTimeout(()=>b.style.width=b.dataset.width+'%',200));
+    }
+  });
+},{threshold:0.12});
+document.querySelectorAll('.fade-up,.timeline-item').forEach(el=>obs.observe(el));
+const sObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.querySelectorAll('.skill-fill,.learning-progress-fill').forEach(b=>setTimeout(()=>b.style.width=b.dataset.width+'%',200));});
+},{threshold:0.2});
+document.querySelectorAll('section').forEach(el=>sObs.observe(el));
+
+/*  PROJECT FILTERS  */
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const f=btn.dataset.filter;
+    document.querySelectorAll('.project-card').forEach(card=>{card.classList.toggle('hidden',f!=='all'&&!(card.dataset.category||'').includes(f));});
+  });
+});
+
+/*  FORMSPREE CONTACT FORM */
+document.getElementById('formSubmit').addEventListener('click',async()=>{
+  const name=document.getElementById('formName').value.trim();
+  const email=document.getElementById('formEmail').value.trim();
+  const msg=document.getElementById('formMessage').value.trim();
+  if(!name||!email||!msg){alert('Please fill in all fields.');return;}
+  const btn=document.getElementById('formSubmit');
+  btn.textContent='Sending...';btn.disabled=true;
+  try{
+    const res=await fetch('https://formspree.io/f/xojnbqkz',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({name,email,message:msg})});
+    if(res.ok){
+      document.getElementById('formSuccess').style.display='block';
+      document.getElementById('formError').style.display='none';
+      btn.textContent='✓ Message Sent';
+      btn.style.cssText='background:transparent;color:var(--accent);border-color:var(--accent);width:100%;justify-content:center;display:inline-flex;padding:14px 32px;border-radius:3px;font-family:Syne,sans-serif;font-size:13px;font-weight:600;letter-spacing:.05em;border:2px solid var(--accent);';
+    } else {
+      document.getElementById('formError').style.display='block';
+      btn.textContent='Send Message →';btn.disabled=false;
+    }
+  }catch(e){
+    document.getElementById('formError').style.display='block';
+    btn.textContent='Send Message →';btn.disabled=false;
+  }
+});
+</script>
+</body>
+</html>

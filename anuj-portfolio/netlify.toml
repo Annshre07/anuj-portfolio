@@ -1,0 +1,12 @@
+# netlify.toml
+# Tells Netlify where your functions live and sets up redirect rules.
+
+[build]
+  publish = "."            # your index.html is in the root
+  functions = "netlify/functions"
+
+# Redirect /.netlify/functions/chat to the serverless function
+[[redirects]]
+  from = "/api/chat"
+  to = "/.netlify/functions/chat"
+  status = 200
