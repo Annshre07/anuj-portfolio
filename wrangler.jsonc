@@ -1,0 +1,9 @@
+{
+  "name": "anuj-portfolio",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-07-17",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  }
+}

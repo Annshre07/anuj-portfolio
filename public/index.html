@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en" data-accent="green">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anuj Dewan — Terminal</title>
+<meta name="description" content="Anuj Dewan · Data Science & ML — a terminal you can talk to.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+/* ============================= TOKENS ============================= */
+:root{
+  --bg:#0B0B0C;
+  --terminal:#121212;
+  --terminal-2:#161616;
+  --text:#E8E6E3;
+  --muted:#8F9491;
+  --border:rgba(232,230,227,0.09);
+  --border-strong:rgba(232,230,227,0.16);
+
+  --green:#9FE870;
+  --amber:#D4A44F;
+  --blue:#7AA2F7;
+  --cream:#EADBC8;
+
+  --accent:var(--green);
+  --accent-dim:color-mix(in srgb, var(--accent) 35%, transparent);
+  --accent-glow:color-mix(in srgb, var(--accent) 22%, transparent);
+
+  --radius-lg:16px;
+  --radius-md:10px;
+  --radius-sm:6px;
+
+  --font-mono:'JetBrains Mono', ui-monospace, monospace;
+  --font-plex:'IBM Plex Mono', ui-monospace, monospace;
+}
+html[data-accent="amber"]{ --accent:var(--amber); }
+html[data-accent="blue"]{ --accent:var(--blue); }
+html[data-accent="cream"]{ --accent:var(--cream); }
+
+*{margin:0;padding:0;box-sizing:border-box;}
+::selection{background:var(--accent-dim);color:var(--text);}
+html,body{height:100%;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-mono);
+  font-size:14.5px;
+  line-height:1.7;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- grain + scanlines + vignette (ambient, subtle) ---------- */
+#grain{
+  position:fixed;inset:0;z-index:2;pointer-events:none;
+  opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode:overlay;
+}
+#scanlines{
+  position:fixed;inset:0;z-index:3;pointer-events:none;
+  background:repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.018) 0px,
+    rgba(255,255,255,0.018) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity:.55;
+}
+#vignette{
+  position:fixed;inset:0;z-index:2;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 40%, transparent 45%, rgba(0,0,0,.55) 100%);
+}
+#starfield{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;}
+
+body.flicker #crt-flicker{opacity:1;}
+#crt-flicker{
+  position:fixed;inset:0;z-index:4;pointer-events:none;
+  background:rgba(255,255,255,0.025);
+  opacity:0;
+  transition:opacity 70ms ease;
+}
+
+/* ============================= BOOT SCREEN ============================= */
+#boot{
+  position:fixed;inset:0;z-index:500;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .7s ease, visibility .7s ease;
+}
+#boot.hidden{opacity:0;visibility:hidden;pointer-events:none;}
+#boot-inner{
+  width:min(640px,88vw);
+  font-family:var(--font-mono);
+  font-size:13px;
+  color:var(--muted);
+}
+#boot-lines{white-space:pre-wrap;min-height:220px;}
+#boot-lines .ok{color:var(--green);}
+#boot-bar-wrap{margin-top:18px;height:2px;background:var(--border);border-radius:2px;overflow:hidden;}
+#boot-bar{height:100%;width:0%;background:var(--accent);transition:width .1s linear;}
+#boot-caret{display:inline-block;width:7px;height:14px;background:var(--muted);vertical-align:-2px;animation:blink 1s steps(1) infinite;}
+
+@keyframes blink{50%{opacity:0;}}
+
+/* ============================= LAYOUT / APP ============================= */
+#app{
+  position:relative;z-index:1;
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  padding:48px 24px;
+  opacity:0;
+  transition:opacity .8s ease;
+}
+#app.ready{opacity:1;}
+
+.term-wrap{
+  width:100%;
+  max-width:880px;
+  animation:winopen .55s cubic-bezier(.2,.9,.25,1) both;
+}
+@keyframes winopen{
+  0%{opacity:0;transform:scale(.965) translateY(14px);}
+  100%{opacity:1;transform:scale(1) translateY(0);}
+}
+
+.terminal{
+  background:color-mix(in srgb, var(--terminal) 88%, transparent);
+  backdrop-filter:blur(18px) saturate(1.1);
+  -webkit-backdrop-filter:blur(18px) saturate(1.1);
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius-lg);
+  box-shadow:
+    0 30px 80px -20px rgba(0,0,0,.6),
+    0 0 0 1px rgba(255,255,255,.02) inset,
+    0 1px 0 rgba(255,255,255,.04) inset;
+  overflow:hidden;
+}
+
+.titlebar{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;
+  background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0));
+  border-bottom:1px solid var(--border);
+}
+.dot{width:11px;height:11px;border-radius:50%;background:#3a3a3a;position:relative;}
+.dot.red{background:#5f5654;}
+.dot.yellow{background:#5f5a4d;}
+.dot.green{background:#4c5a4d;}
+.titlebar-title{
+  flex:1;text-align:center;
+  font-family:var(--font-plex);
+  font-size:11.5px;letter-spacing:.03em;
+  color:var(--muted);
+  margin-right:52px;
+}
+.titlebar-theme{
+  font-size:10.5px;color:var(--muted);letter-spacing:.08em;
+  display:flex;gap:6px;
+}
+.swatch{width:9px;height:9px;border-radius:50%;cursor:pointer;border:1px solid rgba(255,255,255,.15);}
+
+.term-body{
+  padding:26px 26px 8px;
+  height:min(62vh, 560px);
+  overflow-y:auto;
+  scroll-behavior:smooth;
+}
+.term-body::-webkit-scrollbar{width:8px;}
+.term-body::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:10px;}
+.term-body::-webkit-scrollbar-track{background:transparent;}
+
+.line{white-space:pre-wrap;word-break:break-word;}
+.row-cmd{color:var(--text);margin-top:2px;}
+.row-cmd .p1{color:var(--accent);}
+.row-cmd .p2{color:var(--muted);}
+.muted{color:var(--muted);}
+.accent{color:var(--accent);}
+.amber-text{color:var(--amber);}
+.err{color:#d98484;}
+
+.block{margin:10px 0 20px;animation:fadeup .45s ease both;}
+@keyframes fadeup{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.lead{color:var(--text);margin-bottom:4px;}
+
+/* generic card used for projects / research / contact */
+.card{
+  border:1px solid var(--border);
+  background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+  border-radius:var(--radius-md);
+  padding:16px 18px;
+  margin:10px 0;
+  transition:border-color .25s ease, box-shadow .25s ease, transform .25s ease;
+}
+.card:hover{
+  border-color:var(--accent-dim);
+  box-shadow:0 0 0 1px var(--accent-dim), 0 12px 30px -18px var(--accent-glow);
+  transform:translateY(-1px);
+}
+.card-kicker{font-family:var(--font-plex);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
+.card-title{font-family:var(--font-plex);font-weight:600;font-size:15px;margin-bottom:6px;color:var(--text);}
+.card-desc{color:var(--muted);font-size:13.3px;margin-bottom:10px;}
+.tags{display:flex;flex-wrap:wrap;gap:6px;}
+.tag{
+  font-size:11px;letter-spacing:.02em;padding:3px 9px;border-radius:20px;
+  border:1px solid var(--border-strong);color:var(--muted);
+}
+
+/* help table */
+.help-grid{display:grid;grid-template-columns:max-content 1fr;column-gap:22px;row-gap:6px;margin-top:6px;}
+.help-cmd{color:var(--accent);}
+.help-desc{color:var(--muted);}
+
+/* skill bars */
+.skill-row{display:grid;grid-template-columns:170px 1fr 46px;align-items:center;gap:12px;margin:7px 0;font-size:13px;}
+.skill-name{color:var(--text);}
+.skill-track{height:6px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;}
+.skill-fill{height:100%;width:0;background:linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 55%, white));border-radius:4px;transition:width 1.1s cubic-bezier(.2,.8,.2,1);}
+.skill-pct{color:var(--muted);text-align:right;}
+
+/* directory tree (education) */
+.tree{color:var(--text);font-size:13.4px;}
+.tree .branch{color:var(--muted);}
+.tree .dir{color:var(--accent);}
+.tree .meta{color:var(--muted);}
+
+/* markdown-file view (research) */
+.mdfile{border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;margin:10px 0;}
+.mdfile-head{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 14px;background:rgba(255,255,255,.03);
+  border-bottom:1px solid var(--border);
+  font-family:var(--font-plex);font-size:11px;color:var(--muted);letter-spacing:.03em;
+}
+.mdfile-body{padding:14px 18px;font-size:13.3px;}
+.mdfile-body h1{font-family:var(--font-plex);font-size:15px;color:var(--text);margin-bottom:8px;}
+.mdfile-body p{color:var(--muted);}
+.status-pill{
+  font-size:10.5px;padding:2px 9px;border-radius:20px;border:1px solid var(--border-strong);color:var(--accent);
+}
+
+/* neofetch */
+.neofetch{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start;}
+.neofetch pre{color:var(--accent);font-size:11px;line-height:1.25;}
+.neofetch .info div{margin:2px 0;}
+.neofetch .k{color:var(--accent);}
+
+/* contact links */
+.contact-line a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--border-strong);}
+.contact-line a:hover{color:var(--accent);border-color:var(--accent);}
+
+/* prompt / input row */
+.promptline{
+  display:flex;align-items:center;gap:8px;
+  padding:14px 26px 18px;
+  border-top:1px solid var(--border);
+}
+.p1{color:var(--accent);font-weight:600;}
+.p2{color:var(--muted);}
+.sep{color:var(--muted);}
+#cmd-input{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--text);font-family:var(--font-mono);font-size:14.5px;caret-color:var(--accent);
+}
+#cmd-input::placeholder{color:rgba(143,148,145,.5);}
+
+/* ai typing indicator */
+.typing{display:inline-flex;gap:4px;align-items:center;padding:4px 0;}
+.typing span{width:5px;height:5px;border-radius:50%;background:var(--muted);animation:tb 1.1s infinite ease-in-out;}
+.typing span:nth-child(2){animation-delay:.15s;}
+.typing span:nth-child(3){animation-delay:.3s;}
+@keyframes tb{0%,60%,100%{opacity:.25;transform:translateY(0);}30%{opacity:1;transform:translateY(-2px);}}
+
+/* footer hint */
+.hint{color:var(--muted);font-size:11.5px;margin-top:2px;}
+.hint kbd{border:1px solid var(--border-strong);border-radius:4px;padding:0 5px;font-family:var(--font-plex);}
+
+/* below-terminal byline */
+.byline{
+  text-align:center;color:var(--muted);font-size:11.5px;margin-top:18px;letter-spacing:.02em;
+}
+.byline .accent{color:var(--accent);}
+
+/* mobile */
+@media (max-width:640px){
+  .term-body{height:64vh;padding:18px 16px 4px;}
+  .promptline{padding:12px 16px 16px;}
+  .skill-row{grid-template-columns:110px 1fr 40px;}
+  .titlebar-title{margin-right:0;}
+  .neofetch pre{font-size:9px;}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important;}
+}
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="grain"></div>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="crt-flicker"></div>
+
+<!-- BOOT SEQUENCE -->
+<div id="boot">
+  <div id="boot-inner">
+    <div id="boot-lines"></div>
+    <div id="boot-bar-wrap"><div id="boot-bar"></div></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="term-wrap">
+    <div class="terminal">
+      <div class="titlebar">
+        <div class="dot red"></div>
+        <div class="dot yellow"></div>
+        <div class="dot green"></div>
+        <div class="titlebar-title">anuj@dewan — zsh — 96×32</div>
+        <div class="titlebar-theme">
+          <span class="swatch" style="background:#9FE870" data-theme="green" title="green"></span>
+          <span class="swatch" style="background:#D4A44F" data-theme="amber" title="amber"></span>
+          <span class="swatch" style="background:#7AA2F7" data-theme="blue" title="blue"></span>
+          <span class="swatch" style="background:#EADBC8" data-theme="cream" title="cream"></span>
+        </div>
+      </div>
+      <div class="term-body" id="output"></div>
+      <div class="promptline">
+        <span class="p1">anuj@dewan</span><span class="sep">:</span><span class="p2" id="promptPath">~</span><span class="sep">$</span>
+        <input id="cmd-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type 'help' — or just ask me anything" />
+      </div>
+    </div>
+    <div class="byline">this terminal is <span class="accent">real</span> — type a command, or ask it a question directly</div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DATA — Anuj's real portfolio content
+   ============================================================ */
+const DATA = {
+  name: 'Anuj Dewan',
+  location: 'Darjeeling, West Bengal, India',
+  tagline: 'Aspiring Data Scientist · ML & NLP · Healthcare AI',
+  about: [
+    "Hey! I'm Anuj Dewan, an aspiring Data Scientist currently pursuing my M.Sc. in Data Science and Computing at Sri Sathya Sai Institute of Higher Learning, Andhra Pradesh.",
+    "I have a strong academic foundation in Computer Science with hands-on experience in supervised machine learning and full-stack software development. I'm driven by a long-term vision to contribute to the medical domain through data-driven insights and intelligent systems.",
+    "A disciplined learner with a problem-solving mindset, committed to continuous growth, ethical innovation, and the development of impactful tech solutions. I'm fluent in Nepali, Hindi, and English."
+  ],
+  interests: ['Machine Learning','Data Science','Healthcare AI','NLP','Medical Chatbots','Sustainability','Photography','Data Engineering'],
+  skills: [
+    ['C / C++', 70],
+    ['HTML / CSS / JavaScript', 65],
+    ['Python', 60],
+    ['React / Node / Express', 50],
+    ['SQL / MongoDB', 65],
+    ['Machine Learning / NLP', 60],
+    ['EDA', 50],
+  ],
+  education: [
+    { dir:'msc-data-science-computing/', meta:'2027 · CGPA 7.6', school:'Sri Sathya Sai Institute of Higher Learning' },
+    { dir:'bsc-computer-science/', meta:'2025 · CGPA 7.08', school:'Sri Sathya Sai Institute of Higher Learning' },
+    { dir:'higher-secondary-xii/', meta:'2021 · 75%', school:"St. Robert's Higher Secondary School, Darjeeling" },
+    { dir:'secondary-x/', meta:'2019 · 70%', school:"St. Robert's Higher Secondary School, Darjeeling" },
+  ],
+  certifications: [
+    { name:'Supervised Machine Learning: Regression & Classification', by:'Coursera · DeepLearning.AI / Stanford' }
+  ],
+  experience: [
+    { date:'2023 — 2025', role:'Core Member', org:'Eco-Einsteins Club · SSSIHL-NDG', tag:'co-curricular', desc:['Led campus eco-friendly initiatives and sustainability projects.','Organized awareness drives and workshops on environmental responsibility.'] },
+    { date:'2023 — 2025', role:'Member', org:'Multimedia Department · SSSIHL-NDG', tag:'co-curricular', desc:['Produced videos and documented significant institute events using DaVinci Resolve.','Managed visual storytelling and event coverage for the campus community.'] },
+    { date:'2024 — 2025', role:'Technical Assistant', org:'Institute Podcast · SSSIHL', tag:'co-curricular', desc:['Handled content creation, videography, and technical management for the institute podcast.','Contributed to production workflows and episode release pipelines.'] },
+    { date:'2024', role:'Inspire to Innovate Workshop', org:"Institution's Innovation Council, SSSIHL", tag:'workshop', desc:['Focused on structured problem-solving and innovation techniques.'] },
+    { date:'2024', role:'Innovate360', org:'SSSIHL', tag:'workshop', desc:['Covered industry trends, alumni insights, and emerging technologies.'] },
+  ],
+  projects: [
+    { file:'portfolio.log', cat:'Personal Project · Full Stack', title:'Personal Portfolio Website', desc:'Designed and developed a responsive portfolio using the MERN stack, showcasing projects, skills, and experience with interactive UI components and modern design principles.', stack:['React','Node.js','Express','MongoDB','MUI'] },
+    { file:'labyrinth.log', cat:'Institute Project · Platform', title:'Labyrinth — Competitive Coding Platform', desc:'A competitive coding platform inspired by LeetCode, built for institute-level challenges with integrated collaboration features, problem sets, and leaderboards.', stack:['JavaScript','ReactJS','ExpressJS','MongoDB'] },
+    { file:'holistic-health.log', cat:'Mini Project · C++ · Systems', title:'Holistic Health — Dispensary Management System', desc:'Terminal-based dispensary management system for managing medicine stocks, tracking student assets, and securely storing transaction data for the campus health center.', stack:['C++','DSA','File I/O'] },
+  ],
+  research: [
+    { file:'nlp-medical-domain.md', title:'NLP for Medical Domain', status:35, desc:'Exploring NLP techniques applied to clinical text, biomedical literature, and patient data for intelligent health systems.' },
+    { file:'medical-chatbot.md', title:'Medical Chatbot Development', status:35, desc:'Building conversational agents for healthcare using LLMs, fine-tuning on medical QA datasets, and integrating symptom-triage workflows.' },
+    { file:'rag-pipelines.md', title:'RAG — Retrieval Augmented Generation', status:25, desc:'Studying vector databases (FAISS, Pinecone), embedding models, and retrieval pipelines to ground LLM responses in domain-specific knowledge.' },
+    { file:'agentic-ai.md', title:'Agentic AI Systems', status:30, desc:'Building autonomous AI agents with tool use, multi-step reasoning, memory, and planning using LangChain and LlamaIndex.' },
+  ],
+  contact: {
+    email:'catopine07@gmail.com',
+    linkedin:'https://www.linkedin.com/in/anuj-dewan-82562525b/',
+    github:'https://github.com/Annshre07',
+  },
+  resumeUrl:'https://drive.google.com/uc?export=download&id=1CQAb_TrzvuFBEfg1aUyoux_pZNBoROn7',
+};
+
+const ANUJ_SYSTEM_PROMPT = `You are Anuj Dewan's digital twin, embedded inside a terminal-style portfolio. You ONLY answer questions about Anuj — his background, skills, projects, education, interests, and how to contact him. You speak in first person as Anuj, in a friendly, warm, slightly casual tone. Keep responses concise (2-4 sentences max unless asked for detail). Output plain text only, no markdown formatting.
+
+STRICT RULE: If the question is NOT about Anuj (general knowledge, current events, celebrities, politics, sports trivia, science, history, or anything unrelated to Anuj personally), respond with a short, playful redirect like: "Ha, I wish I knew everything! I'm just Anuj's digital twin running in this terminal — ask me about his projects, skills, or what he's been up to." Never answer general knowledge questions.
+
+About Anuj:
+- Pursuing M.Sc. in Data Science & Computing at SSSIHL, Andhra Pradesh (expected 2027, CGPA 7.6)
+- B.Sc. (Hons.) in Computer Science from SSSIHL (2025, CGPA 7.08)
+- Schooled at St. Robert's Higher Secondary School, Darjeeling, West Bengal
+- Interests: Machine Learning, NLP, Healthcare AI, Medical Chatbots, RAG, Agentic AI
+- Currently learning: NLP for Medical Domain, Medical Chatbot Dev, RAG pipelines, Agentic AI Systems
+- Tech skills: Python (60%), C/C++ (70%), HTML/CSS/JS (65%), React/Node/Express (50%), SQL/MongoDB (65%), ML/NLP (60%)
+- Projects: Personal Portfolio (MERN), Labyrinth competitive coding platform (React+Express+MongoDB), Holistic Health dispensary management system (C++)
+- Activities: Core member Eco-Einsteins Club, Multimedia Dept at SSSIHL, Technical Assistant at Institute Podcast
+- Hobbies: Photography, sustainability, loves cricket and FC Barcelona
+- Speaks Nepali, Hindi, and English
+- Open to opportunities
+- Email: catopine07@gmail.com
+- LinkedIn: https://www.linkedin.com/in/anuj-dewan-82562525b/
+- GitHub: https://github.com/Annshre07
+
+Remember: you are NOT a general assistant. Politely deflect anything off-topic back to questions about Anuj.`;
+
+/* ============================================================
+   BOOT SEQUENCE
+   ============================================================ */
+const bootLinesText = [
+  'anuj@dewan — booting console…',
+  '',
+  'checking hardware……………………… ok',
+  'mounting /home/anuj……………… ok',
+  'loading modules: python, react, sql, ml, nlp… ok',
+  'starting digital twin daemon… ok',
+  'decrypting portfolio.dat… ok',
+];
+const bootLinesEl = document.getElementById('boot-lines');
+const bootBar = document.getElementById('boot-bar');
+let bootIdx = 0, bootChar = 0;
+
+function typeBootLine(){
+  if(bootIdx >= bootLinesText.length){
+    finishBoot();
+    return;
+  }
+  const full = bootLinesText[bootIdx];
+  bootLinesEl.innerHTML = bootLinesText.slice(0,bootIdx).map(l=>renderBootLine(l,true)).join('\n') + (bootIdx>0?'\n':'') + renderBootLine(full.slice(0,bootChar), full.slice(0,bootChar)===full);
+  bootBar.style.width = Math.min(100, (bootIdx/bootLinesText.length)*100 + (bootChar/Math.max(full.length,1))*(100/bootLinesText.length)) + '%';
+  if(bootChar < full.length){
+    bootChar++;
+    setTimeout(typeBootLine, full.length ? 10+Math.random()*14 : 0);
+  } else {
+    bootIdx++; bootChar=0;
+    setTimeout(typeBootLine, 90);
+  }
+}
+function renderBootLine(text, done){
+  if(text.endsWith('ok')){
+    const idx = text.lastIndexOf('ok');
+    return text.slice(0,idx) + '<span class="ok">ok</span>';
+  }
+  return text;
+}
+function finishBoot(){
+  bootBar.style.width='100%';
+  setTimeout(()=>{
+    document.getElementById('boot').classList.add('hidden');
+    document.getElementById('app').classList.add('ready');
+    printWelcome();
+    document.getElementById('cmd-input').focus();
+  }, 380);
+}
+setTimeout(typeBootLine, 200);
+
+/* ============================================================
+   TERMINAL CORE
+   ============================================================ */
+const outputEl = document.getElementById('output');
+const inputEl = document.getElementById('cmd-input');
+let history = [];
+let historyPos = -1;
+
+function scrollBottom(){ outputEl.scrollTop = outputEl.scrollHeight; }
+
+function printEcho(cmd){
+  const div = document.createElement('div');
+  div.className = 'line row-cmd';
+  div.innerHTML = '<span class="p1">anuj@dewan</span><span class="muted">:~$</span> ' + escapeHtml(cmd);
+  outputEl.appendChild(div);
+}
+
+function printBlock(html){
+  const div = document.createElement('div');
+  div.className = 'block';
+  div.innerHTML = html;
+  outputEl.appendChild(div);
+  scrollBottom();
+  return div;
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function printWelcome(){
+  printBlock(
+    '<div class="lead">Welcome to <span class="accent">anuj@dewan</span> — a portfolio you can actually talk to.</div>' +
+    '<div class="muted">Type <span class="accent">help</span> to see available commands, or just type a question and hit enter.</div>'
+  );
+}
+
+/* ---------------- command registry ---------------- */
+const COMMANDS = {
+  help(){
+    const rows = [
+      ['help','show this list of commands'],
+      ['about','who is Anuj'],
+      ['skills','technical skill levels'],
+      ['projects','things Anuj has built'],
+      ['experience','activities & involvement timeline'],
+      ['research','currently-open research topics'],
+      ['education','degrees & certifications'],
+      ['resume','download the resume'],
+      ['contact','ways to reach Anuj'],
+      ['theme [name]','switch accent — green / amber / blue / cream'],
+      ['neofetch','system-style summary card'],
+      ['history','your command history'],
+      ['clear','clear the screen'],
+    ];
+    return '<div class="lead">available commands</div><div class="help-grid">' +
+      rows.map(r=>`<span class="help-cmd">${r[0]}</span><span class="help-desc">${r[1]}</span>`).join('') +
+      '</div><div class="hint" style="margin-top:14px">tip: anything that isn\'t a command gets sent straight to Anuj\'s digital twin.</div>';
+  },
+
+  about(){
+    return '<div class="lead">01 — about</div>' +
+      DATA.about.map(p=>`<p class="muted" style="margin-bottom:10px">${p}</p>`).join('') +
+      '<div class="tags" style="margin-top:12px">' + DATA.interests.map(i=>`<span class="tag">${i}</span>`).join('') + '</div>';
+  },
+
+  skills(){
+    const id = 'sk_'+Date.now();
+    setTimeout(()=>{
+      DATA.skills.forEach((s,i)=>{
+        setTimeout(()=>{
+          const fill = document.querySelector('#'+id+' .skill-fill[data-i="'+i+'"]');
+          if(fill) fill.style.width = s[1]+'%';
+        }, 120*i);
+      });
+    }, 30);
+    return `<div class="lead">technical skills</div><div id="${id}">` +
+      DATA.skills.map((s,i)=>`
+        <div class="skill-row">
+          <span class="skill-name">${s[0]}</span>
+          <span class="skill-track"><span class="skill-fill" data-i="${i}"></span></span>
+          <span class="skill-pct">${s[1]}%</span>
+        </div>`).join('') + '</div>';
+  },
+
+  projects(){
+    return '<div class="lead">05 — projects <span class="muted">· $ ls projects/</span></div>' +
+      DATA.projects.map(p=>`
+      <div class="card">
+        <div class="card-kicker">$ cat projects/${p.file}</div>
+        <div class="muted" style="font-size:11.5px;margin-bottom:6px">${p.cat}</div>
+        <div class="card-title">${p.title}</div>
+        <div class="card-desc">${p.desc}</div>
+        <div class="tags">${p.stack.map(s=>`<span class="tag">${s}</span>`).join('')}</div>
+      </div>`).join('');
+  },
+
+  experience(){
+    return '<div class="lead">04 — activities</div>' +
+      DATA.experience.map(e=>`
+      <div class="card">
+        <div class="card-kicker">${e.date} · ${e.tag}</div>
+        <div class="card-title">${e.role}</div>
+        <div class="muted" style="font-size:12.5px;margin-bottom:8px">${e.org}</div>
+        ${e.desc.map(d=>`<div class="muted" style="font-size:13px">— ${d}</div>`).join('')}
+      </div>`).join('');
+  },
+
+  research(){
+    return '<div class="lead">research/ <span class="muted">· open markdown files</span></div>' +
+      DATA.research.map(r=>`
+      <div class="mdfile">
+        <div class="mdfile-head"><span>research/${r.file}</span><span class="status-pill">${r.status}% — in progress</span></div>
+        <div class="mdfile-body">
+          <h1># ${r.title}</h1>
+          <p>${r.desc}</p>
+        </div>
+      </div>`).join('');
+  },
+
+  education(){
+    const e = DATA.education;
+    const lines = e.map((x,i)=>{
+      const last = i===e.length-1;
+      const branch = last ? '└──' : '├──';
+      const pipe = last ? '   ' : '│  ';
+      return `<div class="tree"><span class="branch">${branch}</span> <span class="dir">${x.dir}</span> <span class="meta">[${x.meta}]</span></div>` +
+             `<div class="tree"><span class="branch">${pipe}└──</span> <span class="muted">${x.school}</span></div>`;
+    }).join('');
+    const certs = DATA.certifications.map(c=>`<div class="card" style="margin-top:14px"><div class="card-kicker">certification</div><div class="card-title" style="font-size:13.5px">${c.name}</div><div class="muted" style="font-size:12px">${c.by}</div></div>`).join('');
+    return '<div class="lead">03 — education <span class="muted">· $ tree education/</span></div><div class="tree">education/</div>' + lines + certs;
+  },
+
+  resume(){
+    return '<div class="lead">preparing resume for download…</div>' +
+      `<div class="muted" style="margin:8px 0">$ curl -O resume.pdf</div>` +
+      `<a href="${DATA.resumeUrl}" target="_blank" class="card" style="display:block;text-decoration:none">
+        <div class="card-kicker">download</div>
+        <div class="card-title">Anuj_Dewan_Resume.pdf ↓</div>
+        <div class="muted" style="font-size:12.5px">opens in a new tab</div>
+      </a>`;
+  },
+
+  contact(){
+    const c = DATA.contact;
+    return '<div class="lead">06 — get in touch</div>' +
+      `<div class="card">
+        <div class="contact-line" style="margin-bottom:8px">✉ <a href="mailto:${c.email}">${c.email}</a></div>
+        <div class="contact-line" style="margin-bottom:8px">in&nbsp; <a href="${c.linkedin}" target="_blank">linkedin.com/in/anuj-dewan</a></div>
+        <div class="contact-line">⌨ <a href="${c.github}" target="_blank">github.com/Annshre07</a></div>
+      </div>
+      <div class="muted" style="margin-top:10px">or just type your question below — I'm my own chatbot.</div>`;
+  },
+
+  neofetch(){
+    const art = `   ▄▄▄▄▄▄▄
+  █ ▄▄▄▄▄ █
+  █ █   █ █   anuj@dewan
+  █ █▄▄▄█ █   ─────────────
+  █▄▄▄▄▄▄▄█
+   ▀▀▀▀▀▀▀`;
+    return '<div class="neofetch">' +
+      `<pre>${art}</pre>` +
+      `<div class="info muted">
+        <div><span class="k">os</span>      SSSIHL // Data Science Track</div>
+        <div><span class="k">host</span>    ${DATA.location}</div>
+        <div><span class="k">shell</span>   zsh (digital-twin enabled)</div>
+        <div><span class="k">langs</span>   Nepali, Hindi, English</div>
+        <div><span class="k">stack</span>   Python · C/C++ · React · SQL/MongoDB</div>
+        <div><span class="k">focus</span>   ML · NLP · Healthcare AI</div>
+        <div><span class="k">status</span>  open to opportunities</div>
+      </div>` +
+      '</div>';
+  },
+
+  history(){
+    if(!history.length) return '<div class="muted">no commands yet.</div>';
+    return '<div class="lead">history</div>' + history.map((h,i)=>`<div class="muted">${i+1}  ${escapeHtml(h)}</div>`).join('');
+  },
+
+  clear(){
+    outputEl.innerHTML = '';
+    return null;
+  },
+
+  theme(arg){
+    const valid = ['green','amber','blue','cream'];
+    if(arg && valid.includes(arg)){
+      setAccent(arg);
+      return `<div class="muted">accent switched to <span class="accent">${arg}</span>.</div>`;
+    }
+    // cycle
+    const cur = document.documentElement.getAttribute('data-accent');
+    const next = valid[(valid.indexOf(cur)+1)%valid.length];
+    setAccent(next);
+    return `<div class="muted">accent switched to <span class="accent">${next}</span>. try: theme [green|amber|blue|cream]</div>`;
+  },
+};
+
+function setAccent(name){
+  document.documentElement.setAttribute('data-accent', name);
+  document.querySelectorAll('.swatch').forEach(s=>s.style.outline = s.dataset.theme===name ? '2px solid rgba(255,255,255,.5)' : 'none');
+}
+document.querySelectorAll('.swatch').forEach(s=>{
+  s.addEventListener('click', ()=> setAccent(s.dataset.theme));
+});
+
+/* ---------------- AI fallback (digital twin) ---------------- */
+const chatHistory = [];
+async function askDigitalTwin(message){
+  chatHistory.push({ role:'user', content: message });
+  const typingDiv = printBlock('<div class="muted" style="font-size:12px;margin-bottom:4px">anuj (ai)</div><div class="typing"><span></span><span></span><span></span></div>');
+  try{
+    const res = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ system: ANUJ_SYSTEM_PROMPT, messages: chatHistory })
+    });
+    const data = await res.json();
+    const reply = data.reply || "Hmm, something went sideways on my end. Try again?";
+    chatHistory.push({ role:'assistant', content: reply });
+    typingDiv.innerHTML = '<div class="muted" style="font-size:12px;margin-bottom:4px">anuj (ai)</div><div>'+escapeHtml(reply)+'</div>';
+  }catch(err){
+    typingDiv.innerHTML = '<div class="muted" style="font-size:12px;margin-bottom:4px">anuj (ai)</div><div class="err">connection issue — try again in a bit.</div>';
+  }
+  scrollBottom();
+}
+
+/* ---------------- input handling ---------------- */
+function runCommand(raw){
+  const trimmed = raw.trim();
+  if(!trimmed) return;
+  history.push(trimmed);
+  historyPos = history.length;
+  printEcho(trimmed);
+
+  const [cmd, ...rest] = trimmed.split(/\s+/);
+  const key = cmd.toLowerCase();
+
+  if(COMMANDS[key]){
+    const result = COMMANDS[key](rest.join(' '));
+    if(result) printBlock(result);
+  } else {
+    askDigitalTwin(trimmed);
+  }
+  scrollBottom();
+}
+
+inputEl.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){
+    const val = inputEl.value;
+    inputEl.value='';
+    runCommand(val);
+  } else if(e.key === 'ArrowUp'){
+    if(history.length){
+      historyPos = Math.max(0, historyPos-1);
+      inputEl.value = history[historyPos] || '';
+      setTimeout(()=>inputEl.setSelectionRange(inputEl.value.length,inputEl.value.length));
+    }
+    e.preventDefault();
+  } else if(e.key === 'ArrowDown'){
+    if(history.length){
+      historyPos = Math.min(history.length, historyPos+1);
+      inputEl.value = history[historyPos] || '';
+    }
+    e.preventDefault();
+  }
+});
+
+document.getElementById('app').addEventListener('click', (e)=>{
+  if(e.target === e.currentTarget || e.target.closest('.terminal')) inputEl.focus();
+});
+
+/* ============================================================
+   AMBIENT: starfield + CRT flicker
+   ============================================================ */
+const canvas = document.getElementById('starfield');
+const ctx = canvas.getContext('2d');
+let W,H;
+function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
+resize(); window.addEventListener('resize', resize);
+const stars = Array.from({length:70}, ()=>({
+  x:Math.random()*window.innerWidth, y:Math.random()*window.innerHeight,
+  r:Math.random()*1.1+.2, vy:Math.random()*.06+.02, a:Math.random()*.5+.15
+}));
+function drawStars(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#E8E6E3';
+  stars.forEach(s=>{
+    s.y += s.vy; if(s.y>H) s.y = 0;
+    ctx.globalAlpha = s.a;
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(drawStars);
+}
+drawStars();
+
+// occasional CRT flicker
+setInterval(()=>{
+  document.body.classList.add('flicker');
+  setTimeout(()=>document.body.classList.remove('flicker'), 90);
+}, 7000 + Math.random()*6000);
+</script>
+</body>
+</html>
